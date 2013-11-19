@@ -1,1 +1,1 @@
-../src/dstring.h
+/home/lukas/Coding/C/libutil/include/../src/dstring.h
