@@ -8,10 +8,8 @@ SOURCES=dstring.c json.c utf8.c container/array.c \
 
 OBJECTS=$(addprefix src/, $(addsuffix .o, $(basename $(SOURCES))))
 
-libutil.so.1.0: objects
+libutil.so.1.0: $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
-
-objects: $(OBJECTS)
 
 $(OBJECTS):
 
