@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 /*
  * Oldschool strings and helper functions for working with them dynamically and

@@ -51,11 +51,17 @@ char *dstrndup(const char *src, size_t n)
 
 char *dstrcat(const char *a, const char *b)
 {
+    if (a == NULL)
+        return dstrdup(b);
+
     return strcat(strcat(dstrinit('\0', strlen(a) + strlen(b)), a), b);
 }
 
 char *dstrcati(char *a, const char *b)
 {
+    if (a == NULL)
+        return dstrdup(b);
+
     size_t newlen = strlen(a) + strlen(b);
 
     char *newstr = realloc(a, newlen + 1);
@@ -101,6 +107,10 @@ char *dsprintfi(char *dest, size_t pos, const char *fmt, ...)
 char *dvsprintfi(char *dest, size_t pos, const char *fmt, va_list args)
 {
     char *ins = dvsprintf(fmt, args);
+
+    if (dest == NULL)
+        return ins;
+
     char *ret = dstrinsn(dest, pos, ins);
     free(ins);
 

@@ -67,6 +67,60 @@ struct json_value *json_object_new()
     return v;
 }
 
+bool json_is_null(struct json_value *val)
+{
+    return val->type == JSON_NULL;
+}
+
+const char *json_get_string(struct json_value *val)
+{
+    return (val->type == JSON_STRING) ? val->jstring : NULL;
+}
+
+void json_set_string(struct json_value *val, const char *newstring)
+{
+    /* whatever the old value was, free it and turn this value into a string */
+    json_free_contents(val);
+
+    val->type = JSON_STRING;
+    val->jstring = strdup(newstring);
+}
+
+double *json_get_number(struct json_value *val)
+{
+    return (val->type == JSON_NUMBER) ? &val->jnumber : NULL;
+}
+
+bool *json_get_bool(struct json_value *val)
+{
+    return (val->type == JSON_BOOLEAN) ? &val->jbool : NULL;
+}
+
+bool json_get_logical_bool(struct json_value *val)
+{
+    switch (val->type) {
+        case JSON_STRING:  return strlen(val->jstring) > 0;
+        case JSON_NUMBER:  return val->jnumber > 0;
+        case JSON_NULL:    return false;
+        case JSON_BOOLEAN: return val->jbool;
+        case JSON_ARRAY:   return val->jarray != NULL; /* NULL = empty list */
+        case JSON_OBJECT:  return hashtable_size(val->jobject) > 0;
+    }
+
+    return false;
+}
+
+struct list *json_get_array(struct json_value *val)
+{
+    return (val->type == JSON_ARRAY) ? val->jarray : NULL;
+}
+
+struct hashtable *json_get_object(struct json_value *val)
+{
+    return (val->type == JSON_OBJECT) ? val->jobject : NULL;
+}
+
+
 void json_free_wrapper_hash(void *val)
 {
     json_free(val);
@@ -80,6 +134,12 @@ void json_free_wrapper(void *val, void *ud)
 }
 
 void json_free(struct json_value *v)
+{
+    json_free_contents(v);
+    free(v);
+}
+
+void json_free_contents(struct json_value *v)
 {
     switch (v->type) {
     case JSON_STRING:
@@ -97,8 +157,6 @@ void json_free(struct json_value *v)
     default:
         break;
     }
-
-    free(v);
 }
 
 struct json_value *json_parse(const char *input)
@@ -173,6 +231,7 @@ struct json_value *json_parse_value(struct json_lexer_state *lex)
 
 exit_err_obj:
             json_free(obj);
+
             return NULL;
 
         case TOK_SQUARE_BRACKET_OPEN:
@@ -222,6 +281,7 @@ exit_err_obj:
 
 exit_err_arr:
             json_free(arr);
+
             return NULL;
 
         case TOK_STRING:

@@ -86,9 +86,62 @@ struct json_value *json_null_new();
 struct json_value *json_array_new();
 struct json_value *json_object_new();
 
+/*
+ * These either return a pointer to the expected value, or NULL on type error.
+ * Functions that don't return a const pointer can be used to set the contained
+ * value (by design).
+ */
+bool json_is_null(struct json_value *val);
+
+const char *json_get_string(struct json_value *val);
+void        json_set_string(struct json_value *val, const char *newstring);
+
+double *json_get_number(struct json_value *val);
+bool   *json_get_bool  (struct json_value *val);
+
+/*
+ * Returns true or false in a more weakly typed manner. Empty strings, false,
+ * null, zero, an empty array, an empty hashtable return false. Everything else
+ * returns true.
+ */
+bool json_get_logical_bool(struct json_value *val);
+
+/*
+ * Since json is bundled in this library of hashtables and lists, rewriting
+ * functionality like json_object_insert() and json_object_remove() would be
+ * redundant. Instead, we simply return the underlying data structures for use
+ * with their native functions
+ */
+struct list      *json_get_array (struct json_value *val);
+struct hashtable *json_get_object(struct json_value *val);
+
+/*
+ * Although little helpers never harmed anybody.
+ */
+#define JSON_OBJECT_LOOKUP(obj, key) \
+    (struct json_value *)hashtable_lookup(json_get_object((obj)), (key))
+
+/*
+ * Or bigger helpers. This one will segfault on a type mismatch (unless it
+ * resolves to a string, in which case it will still return NULL, or a bool is
+ * requested), so watch out! Use it only when you know the types are correct
+ * (by verifying the JSON document beforehand for example)
+ */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#   define JSON_GET(val, type) ((type)(_Generic((type)0,    \
+        unsigned:    (*json_get_number(val)),               \
+        int:         (*json_get_number(val)),               \
+        double:      (*json_get_number(val)),               \
+        float:       (*json_get_number(val)),               \
+        bool:        (json_get_logical_bool(val)),          \
+        const char*: (json_get_string(val)))))
+#endif
+
 void json_free_wrapper_hash(void *val);
 void json_free_wrapper(void *val, void *ud);
+
 void json_free(struct json_value *v);
+void json_free_contents(struct json_value *v);
 
 struct json_value *json_parse(const char *input);
 struct json_value *json_parse_value(struct json_lexer_state *lex);
