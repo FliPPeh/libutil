@@ -86,13 +86,13 @@ struct json_value *json_null_new();
 struct json_value *json_array_new();
 struct json_value *json_object_new();
 
+bool json_is_null(struct json_value *val);
+enum json_value_type json_get_value_type(struct json_value *val);
 /*
  * These either return a pointer to the expected value, or NULL on type error.
  * Functions that don't return a const pointer can be used to set the contained
  * value (by design).
  */
-bool json_is_null(struct json_value *val);
-
 const char *json_get_string(struct json_value *val);
 void        json_set_string(struct json_value *val, const char *newstring);
 

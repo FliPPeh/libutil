@@ -72,6 +72,11 @@ bool json_is_null(struct json_value *val)
     return val->type == JSON_NULL;
 }
 
+enum json_value_type json_get_value_type(struct json_value *val)
+{
+    return val->type;
+}
+
 const char *json_get_string(struct json_value *val)
 {
     return (val->type == JSON_STRING) ? val->jstring : NULL;
