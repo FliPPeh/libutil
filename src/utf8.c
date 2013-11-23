@@ -13,9 +13,11 @@ int utf8_encode(char *buf, size_t bufsiz, char32_t codepoint)
         return -1;
 
     if (w > 1) {
+        size_t i;
+
         buf[0] = _utf8_header_byte(codepoint, w);
 
-        for (size_t i = 1; i < w; ++i)
+        for (i = 1; i < w; ++i)
             buf[i] = _utf8_continuation_byte(codepoint, w, i);
     } else {
         buf[0] = codepoint & 0x7f;
@@ -26,11 +28,14 @@ int utf8_encode(char *buf, size_t bufsiz, char32_t codepoint)
 
 int utf8_decode(const char *buf, size_t bufsiz, char32_t *codepoint)
 {
+    unsigned w;
+
     /* Can't do anything without at least reading one byte. */
     if (bufsiz < 1)
         return -1;
 
-    unsigned w = _utf8_decoding_width(buf[0]);
+    w = _utf8_decoding_width(buf[0]);
+
     if (!w || (w > 6))
         return 0;
     else if ((bufsiz < w) && (codepoint != NULL))
@@ -39,9 +44,11 @@ int utf8_decode(const char *buf, size_t bufsiz, char32_t *codepoint)
         return w;
 
     if (w > 1) {
+        size_t i;
+
         *codepoint = _utf8_header_value(buf[0], w);
 
-        for (size_t i = 1; i < w; ++i) {
+        for (i = 1; i < w; ++i) {
             /* We need a continuation byte, it's an error if there isn't. */
             if (!_utf8_is_continuation(buf[i]))
                 return 0;
@@ -119,7 +126,7 @@ unsigned _utf8_shiftpos(unsigned w, unsigned n)
     return 6 * (w - 1 - n);
 }
 
-bool _utf8_is_continuation(unsigned char c)
+int _utf8_is_continuation(unsigned char c)
 {
     return (c & 0xc0) == 0x80;
 }

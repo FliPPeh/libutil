@@ -84,10 +84,11 @@ struct list *list_insert_sorted(struct list *list,
         list = list_new_with_data(data);
     } else {
         struct list *newitem = list_new_with_data(data);
+        struct list *ptr;
 
         newitem->data = data;
 
-        for (struct list *ptr = list; ptr != NULL; ptr = ptr->next) {
+        for (ptr = list; ptr != NULL; ptr = ptr->next) {
             if (fn(ptr->data, data, userdata) < 0)
                 return _list_link_before(list, ptr, newitem);
 
@@ -104,7 +105,9 @@ struct list *list_remove(struct list *list,
                          list_delete_func fn,
                          void *ud)
 {
-    for (struct list *ptr = list; ptr != NULL; ptr = ptr->next) {
+    struct list *ptr;
+
+    for (ptr = list; ptr != NULL; ptr = ptr->next) {
         if (ptr->data == data) {
             struct list *newlist = _list_unlink(list, ptr);
 
@@ -147,7 +150,9 @@ struct list *list_remove_link(struct list *list,
                               list_delete_func fn,
                               void *ud)
 {
-    for (struct list *ptr = list; ptr != NULL; ptr = ptr->next) {
+    struct list *ptr;
+
+    for (ptr = list; ptr != NULL; ptr = ptr->next) {
         if (ptr == link) {
             struct list *newlist = _list_unlink(list, ptr);
 
@@ -188,7 +193,9 @@ size_t list_length(struct list *list)
 
 void list_foreach(struct list *list, list_data_func fn, void *ud)
 {
-    for (struct list *ptr = list; ptr != NULL; ptr = ptr->next)
+    struct list *ptr;
+
+    for (ptr = list; ptr != NULL; ptr = ptr->next)
         fn(ptr->data, ud);
 }
 
@@ -196,7 +203,7 @@ void list_foreach_reverse(struct list *list, list_data_func fn, void *ud)
 {
     struct list *ptr = NULL;
 
-    for (struct list *ptr = list; ptr->next != NULL; ptr = ptr->next);
+    for (ptr = list; ptr->next != NULL; ptr = ptr->next);
 
     for (; ptr != NULL; ptr = ptr->prev)
         fn(ptr->data, ud);
@@ -209,9 +216,10 @@ struct list *list_copy(struct list *list)
 
 struct list *list_copy_deep(struct list *list, list_copy_func fn, void *ud)
 {
+    struct list *ptr;
     struct list *copy = NULL;
 
-    for (struct list *ptr = list; ptr != NULL; ptr = ptr->next)
+    for (ptr = list; ptr != NULL; ptr = ptr->next)
         list_prepend(copy, fn(ptr->data, ud));
 
     return list_reverse(copy);
@@ -235,9 +243,10 @@ struct list *list_reverse(struct list *list)
 
 struct list *list_sort(struct list *list, list_compare_func fn, void *userdata)
 {
+    struct list *ptr;
     struct list *sorted = NULL;
 
-    for (struct list *ptr = list; ptr != NULL; ptr = ptr->next)
+    for (ptr = list; ptr != NULL; ptr = ptr->next)
         sorted = list_insert_sorted(sorted, ptr->data, fn, userdata);
 
     return sorted;
@@ -290,7 +299,9 @@ struct list *list_find_custom(
         list_compare_func fn,
         void *userdata)
 {
-    for (struct list *ptr = list; ptr != NULL; ptr = ptr->next)
+    struct list *ptr;
+
+    for (ptr = list; ptr != NULL; ptr = ptr->next)
         if (!fn(ptr->data, data, userdata))
             return ptr;
 
@@ -300,8 +311,9 @@ struct list *list_find_custom(
 int list_position(struct list *list, struct list *link)
 {
     int pos = 0;
+    struct list *ptr;
 
-    for (struct list *ptr = list; ptr != NULL; ptr = ptr->next, pos++)
+    for (ptr = list; ptr != NULL; ptr = ptr->next, pos++)
         if (ptr == link)
             return pos;
 
@@ -311,8 +323,9 @@ int list_position(struct list *list, struct list *link)
 int list_index(struct list *list, const void *data)
 {
     int pos = 0;
+    struct list *ptr;
 
-    for (struct list *ptr = list; ptr != NULL; ptr = ptr->next, pos++)
+    for (ptr = list; ptr != NULL; ptr = ptr->next, pos++)
         if (ptr->data == data)
             return pos;
 

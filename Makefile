@@ -1,4 +1,5 @@
-CFLAGS=-Wall -g -fPIC -Wextra -std=c11
+# -ansi and -std=c90 will also work with some limitations (everything snprintf)
+CFLAGS=-Wall -g -fPIC -Wextra -std=c99 -pedantic
 LDFLAGS=-shared -Wl,-soname,libutil.so.1.0
 CC=clang
 

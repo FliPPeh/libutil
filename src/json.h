@@ -25,7 +25,7 @@ struct json_value
 {
     enum json_value_type type;
 
-    union
+    union json_value_value
     {
         char *jstring;
         double jnumber;
@@ -33,24 +33,24 @@ struct json_value
 
         struct list *jarray;
         struct hashtable *jobject;
-    };
+    } value;
 };
 
 enum json_token_type
 {
-    // Object tokens
+    /* Object tokens */
     TOK_BRACE_OPEN,
     TOK_BRACE_CLOSE,
     TOK_COLON,
 
-    // Array tokens
+    /* Array tokens */
     TOK_SQUARE_BRACKET_OPEN,
     TOK_SQUARE_BRACKET_CLOSE,
 
-    // Array and object token
+    /* Array and object token */
     TOK_COMMA,
 
-    // Simple types
+    /* Simple types */
     TOK_STRING,
     TOK_NUMBER,
     TOK_TRUE,
@@ -60,20 +60,20 @@ enum json_token_type
     TOK_MAX
 };
 
-// Maps token types to their string representation
+/* Maps token types to their string representation */
 extern const char *json_token_str[];
 
 struct json_token
 {
-    size_t i; // token start position within input
-    size_t j; // token end position within input
+    size_t i; /* token start position within input */
+    size_t j; /* token end position within input */
 
     enum json_token_type type;
 };
 
 struct json_lexer_state
 {
-    size_t pos; // position within the input range
+    size_t pos; /* position within the input range */
     const char *input;
 };
 
@@ -88,6 +88,7 @@ struct json_value *json_object_new();
 
 bool json_is_null(struct json_value *val);
 enum json_value_type json_get_value_type(struct json_value *val);
+
 /*
  * These either return a pointer to the expected value, or NULL on type error.
  * Functions that don't return a const pointer can be used to set the contained
@@ -127,7 +128,7 @@ struct hashtable *json_get_object(struct json_value *val);
  * requested), so watch out! Use it only when you know the types are correct
  * (by verifying the JSON document beforehand for example)
  */
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#if __STDC_VERSION__ >= 201112L
 #   define JSON_GET(val, type) ((type)(_Generic((type)0,    \
         unsigned:    (*json_get_number(val)),               \
         int:         (*json_get_number(val)),               \
@@ -148,8 +149,14 @@ struct json_value *json_parse_value(struct json_lexer_state *lex);
 char *json_parse_string(struct json_lexer_state *lex,
                         struct json_token *tok);
 
-size_t json_dump(char *out, size_t nout, struct json_value *val);
-size_t json_dump_string(char *out, size_t nout, const char *str);
+/*
+ * These make use of snprintf which is not ANSI C90, so they are only exported
+ * (and compiled) if C99 support is enabled
+ */
+#if __STDC_VERSION__ >= 199901L
+    size_t json_dump(char *out, size_t nout, struct json_value *val);
+    size_t json_dump_string(char *out, size_t nout, const char *str);
+#endif
 
 /*
  * Attempt to fetch the next token from state into tok. Returns 0 on success and

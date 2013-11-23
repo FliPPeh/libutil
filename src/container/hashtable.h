@@ -7,9 +7,9 @@
 #include <stdbool.h>
 
 #define HASHTABLE_INIT_SIZE 4
-#define AUTOREHASH // undefine to never automatically rehash tables.
-#define HASHTABLE_MINLOAD 0.12 // minimum load factor for rehash on delete
-#define HASHTABLE_MAXLOAD 0.75 // maximum load factor for rehash on insert
+#define AUTOREHASH             /* undefine to never automatically rehash   */
+#define HASHTABLE_MINLOAD 0.12 /* minimum load factor for rehash on delete */
+#define HASHTABLE_MAXLOAD 0.75 /* maximum load factor for rehash on insert */
 
 typedef size_t (*hashtable_hash_func)(const void *key);
 typedef int (*hashtable_equality_func)(const void *ka, const void *kb);
@@ -28,7 +28,6 @@ struct hashtable
     hashtable_delete_func free_value;
 };
 
-// For list items
 struct hashtable_entry
 {
     void *key;
@@ -140,17 +139,19 @@ bool hashtable_iterator_next(struct hashtable_iterator *iter,
     hashtable_new_with_free(HASHFUNC_FOR(T),    \
                             EQUALFUNC_FOR(T), (fkey), (fval))
 
-// TODO: More functions
-#define HASHFUNC_FOR(T) _Generic((T)NULL, \
+#if __STDC_VERSION__ >= 201112L
+/* TODO: More functions */
+#   define HASHFUNC_FOR(T) _Generic((T)NULL, \
         const char *: str_hash)
 
-#define EQUALFUNC_FOR(T) _Generic((T)NULL, \
+#   define EQUALFUNC_FOR(T) _Generic((T)NULL, \
         const char *: str_equal)
+#endif
 
-size_t ascii_hash(const void *str);
+size_t ascii_hash(const void *k);
 int ascii_equal(const void *a, const void *b);
 
-size_t str_hash(const void *str);
+size_t str_hash(const void *k);
 int str_equal(const void *a, const void *b);
 
 #endif /* defined HASHTABLE_H */

@@ -1,8 +1,13 @@
 #ifndef UTF8_H
 #define UTF8_H
 
-#include <stdbool.h>
-#include <uchar.h> /* char32_t */
+#include <stdlib.h>
+
+#if __STDC_VERSION >= 201112L
+#   include <uchar.h> /* char32_t */
+#else
+#   define char32_t unsigned long
+#endif
 
 /*
  * Encodes the given codepoint into the buffer buf.
@@ -62,7 +67,7 @@ long utf8_strlen_s(const char *str);
  * not necessary.
  */
 unsigned _utf8_shiftpos(unsigned w, unsigned n);
-bool _utf8_is_continuation(unsigned char c);
+int _utf8_is_continuation(unsigned char c);
 
 /*
  * Encoding

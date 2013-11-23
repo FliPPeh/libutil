@@ -21,12 +21,14 @@ struct array *array_new_prealloc(size_t elemsize, size_t elemcount);
 
 void array_free(struct array *arr);
 
-// Returns the managed array data casted to a pointer to t
+/* Returns the managed array data casted to a pointer to t */
 #define ARRAY_DATA(a, t) ((t*)((a)->data))
 
-// Analogous to arr[i] (can be assigned to, can overflow, does NOT update
-// array length on assign!) - use only for fast access within known boundaries
-// or when only using functions that do not depend on the current length.
+/*
+ * Analogous to arr[i] (can be assigned to, can overflow, does NOT update
+ * array length on assign!) - use only for fast access within known boundaries
+ * or when only using functions that do not depend on the current length.
+ */
 #define ARRAY_INDEX(a, i, t) ARRAY_DATA(a, t)[i]
 
 size_t array_length(struct array *arr);

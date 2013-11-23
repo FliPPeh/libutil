@@ -39,11 +39,13 @@ char *dstrndup(const char *src, size_t n);
 char *dstrcat(const char *dest, const char *src);
 char *dstrcati(char *dest, const char *src);
 
-char *dsprintf(const char *fmt, ...);
-char *dvsprintf(const char *fmt, va_list args);
+#if __STDC_VERSION__ >= 199901L
+    char *dsprintf(const char *fmt, ...);
+    char *dvsprintf(const char *fmt, va_list args);
 
-char *dsprintfi(char *dest, size_t pos, const char *fmt, ...);
-char *dvsprintfi(char *dest, size_t pos, const char *fmt, va_list args);
+    char *dsprintfi(char *dest, size_t pos, const char *fmt, ...);
+    char *dvsprintfi(char *dest, size_t pos, const char *fmt, va_list args);
+#endif
 
 /*
  * Returns a pointer to the nth codepoint (not byte). Return NULL if str
@@ -105,7 +107,7 @@ char32_t dstridx(const char *str, size_t pos);
 long dstrlen(const char *str);
 
 /* returns whether or not str is valid UTF-8 */
-bool dstrvalid(const char *str);
+int dstrvalid(const char *str);
 
 /* Splits the given string on a given separator (not including it in the
  * results). Returns a NULL terminated array of strings which have to be freed

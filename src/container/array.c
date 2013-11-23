@@ -20,7 +20,7 @@ struct array *array_new_prealloc(size_t elemsize, size_t elemcount)
         arr->capacity = elemcount;
         arr->element_size = elemsize;
 
-        // Because malloc(0) is implementation defined.
+        /* Because malloc(0) is implementation defined. */
         if (elemcount > 0) {
             arr->data = malloc(elemcount * elemsize);
             memset(arr->data, 0, elemcount * elemsize);

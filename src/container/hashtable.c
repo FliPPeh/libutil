@@ -36,11 +36,12 @@ struct hashtable *hashtable_new_real(size_t buckets,
                                      hashtable_delete_func fkey,
                                      hashtable_delete_func fvalue)
 {
+    struct hashtable *tab = NULL;
+
     assert(hsh != NULL);
     assert(eq != NULL);
 
-    struct hashtable *tab = malloc(sizeof(*tab));
-
+    tab = malloc(sizeof(*tab));
     memset(tab, 0, sizeof(*tab));
 
     tab->bucket_count = buckets;
@@ -79,36 +80,39 @@ void hashtable_free(struct hashtable *table)
 
 void hashtable_insert(struct hashtable *table, void *key, void *value)
 {
+    size_t idx;
+
     assert(table != NULL);
     assert(key != NULL);
 
-    size_t idx = table->key_hash(key) % table->bucket_count;
+    idx = table->key_hash(key) % table->bucket_count;
 
     if (table->buckets[idx] == NULL) {
-        // Bucket empty => new singleton list.
+        /* Bucket empty => new singleton list. */
         table->buckets[idx] = list_new_with_data(
             _hashtable_entry_new(key, value));
     } else {
-        // Bucket not empty => scan for eventually existing key to replace
-        for (struct list *n = table->buckets[idx]; n != NULL; n = n->next) {
+        struct list *n = NULL;
+        /* Bucket not empty => scan for eventually existing key to replace */
+        for (n = table->buckets[idx]; n != NULL; n = n->next) {
             struct hashtable_entry *e = list_data(n, struct hashtable_entry *);
 
             if (table->key_equal(key, e->key) == 0) {
-                // replace!
+                /* replace! */
                 if (table->free_value)
                     table->free_value(e->value);
 
-                // Also free the new key, we're using the old one
+                /* Also free the new key, we're using the old one */
                 if (table->free_key)
                     table->free_key(key);
 
                 e->value = value;
-                return; // Return early because the entries count is unchanged
-                        // and no rehash is necessary.
+                /* Return early because the entries count is unchanged */
+                return;
             }
         }
 
-        // Not found in list, append!
+        /* Not found in list, append! */
         list_append(table->buckets[idx], _hashtable_entry_new(key, value));
     }
 
@@ -125,12 +129,15 @@ void _hashtable_remove_internal(struct hashtable *table,
                                 const void *key,
                                 list_delete_func deleter)
 {
+    size_t idx;
+    struct list *lst;
+
     assert(table != NULL);
     assert(key != NULL);
 
-    size_t idx = table->key_hash(key) % table->bucket_count;
+    idx = table->key_hash(key) % table->bucket_count;
 
-    struct list *lst = list_find_custom(
+    lst = list_find_custom(
         table->buckets[idx], key, _hashtable_find, table);
 
     if (!lst)
@@ -161,7 +168,9 @@ void hashtable_remove_shallow(struct hashtable *table, const void *key)
 void _hashtable_clear_internal(struct hashtable *table,
                                list_delete_func deleter)
 {
-    for (size_t i = 0; i < table->bucket_count; ++i) {
+    size_t i;
+
+    for (i = 0; i < table->bucket_count; ++i) {
         list_free_all(table->buckets[i], deleter, table);
         table->buckets[i] = NULL;
     }
@@ -187,16 +196,20 @@ int _hashtable_find(const void *listdata, const void *key, void *ud)
 
 void *hashtable_lookup(const struct hashtable *table, const void *key)
 {
+    size_t hash;
+    size_t idx;
+    struct list *n;
+
     assert(table != NULL);
     assert(key != NULL);
 
-    size_t hash = table->key_hash(key);
-    size_t idx = hash % table->bucket_count;
+    hash = table->key_hash(key);
+    idx = hash % table->bucket_count;
 
     if (table->buckets[idx] == NULL)
         return NULL;
 
-    struct list *n = list_find_custom(
+    n = list_find_custom(
         table->buckets[idx], key, _hashtable_find, (void *)table);
 
     if (n != NULL)
@@ -229,57 +242,68 @@ double hashtable_load_factor(const struct hashtable *table)
 
 void hashtable_rehash(struct hashtable *table)
 {
+    size_t newcount;
+    struct hashtable *tmp;
+
     assert(table != NULL);
 
-    size_t newcount = hashtable_load_factor(table) > HASHTABLE_MAXLOAD
+    newcount = hashtable_load_factor(table) > HASHTABLE_MAXLOAD
         ? table->bucket_count * 2
         : table->bucket_count / 2;
 
-    struct hashtable *tmp = hashtable_new_real(
+    tmp = hashtable_new_real(
         newcount,
         table->key_hash,
         table->key_equal,
         NULL,
         NULL);
 
-    // Move elements to temporary table
+    /* Move elements to temporary table */
     hashtable_union(tmp, table);
 
-    // Free the buckets of the old table
+    /* Free the buckets of the old table */
     hashtable_clear_shallow(table);
     free(table->buckets);
 
-    // Move over the new buckets and size
+    /* Move over the new buckets and size */
     table->buckets      = tmp->buckets;
     table->bucket_count = tmp->bucket_count;
 
-    // Free the old container.
+    /* Free the old container. */
     free(tmp);
 }
 
 struct list *hashtable_keys(const struct hashtable *table)
 {
-    assert(table != NULL);
-
+    size_t i;
     struct list *lst = NULL;
 
-    for (size_t i = 0; i < table->bucket_count; ++i)
-        for (struct list *p = table->buckets[i]; p != NULL; p = p->next)
+    assert(table != NULL);
+
+    for (i = 0; i < table->bucket_count; ++i) {
+        struct list *p;
+
+        for (p = table->buckets[i]; p != NULL; p = p->next)
             lst = list_append(lst, list_data(p, struct hashtable_entry *)->key);
+    }
 
     return lst;
 }
 
 struct list *hashtable_values(const struct hashtable *table)
 {
-    assert(table != NULL);
-
+    size_t i;
     struct list *lst = NULL;
 
-    for (size_t i = 0; i < table->bucket_count; ++i)
-        for (struct list *p = table->buckets[i]; p != NULL; p = p->next)
+    assert(table != NULL);
+
+    for (i = 0; i < table->bucket_count; ++i) {
+        struct list *p;
+
+        for (p = table->buckets[i]; p != NULL; p = p->next)
             lst = list_append(
                 lst, list_data(p, struct hashtable_entry *)->value);
+    }
 
     return lst;
 }
@@ -377,10 +401,10 @@ size_t str_hash(const void *k)
 {
     size_t hash = 5381;
     char c;
+    const char *str = k;
 
-    while ((c = *(const char *)k++)) {
+    while ((c = *str++))
         hash = ((hash << 5) + hash) + c;
-    }
 
     return hash;
 }
@@ -391,14 +415,14 @@ int str_equal(const void *a, const void *b)
 }
 
 /* Modified DJB algorithm that hashes the characters as lowercase */
-size_t ascii_hash(const void *str)
+size_t ascii_hash(const void *k)
 {
     size_t hash = 5381;
     char c;
+    const char *str = k;
 
-    while ((c = *(const char *)str++)) {
+    while ((c = *str++))
         hash = ((hash << 5) + hash) + (c | (1 << 5));
-    }
 
     return hash;
 }
