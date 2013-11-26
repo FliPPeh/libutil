@@ -450,6 +450,6 @@ size_t char_hash(const void *k)
 
 int char_equal(const void *a, const void *b)
 {
-    return *((char *)a) == *((char *)b);
+    return !(*((char *)a) == *((char *)b));
 }
 
