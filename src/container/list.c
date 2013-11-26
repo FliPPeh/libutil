@@ -180,7 +180,7 @@ void list_free_all(struct list *list, list_delete_func fn, void *ud)
 
 size_t list_length(struct list *list)
 {
-    size_t n = 0;
+    size_t n = 1;
 
     if (!list)
         return 0;
