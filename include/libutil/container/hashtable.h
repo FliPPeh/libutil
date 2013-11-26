@@ -154,4 +154,7 @@ int ascii_equal(const void *a, const void *b);
 size_t str_hash(const void *k);
 int str_equal(const void *a, const void *b);
 
+size_t char_hash(const void *k);
+int char_equal(const void *a, const void *b);
+
 #endif /* defined HASHTABLE_H */

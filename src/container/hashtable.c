@@ -443,3 +443,13 @@ int ascii_equal(const void *a, const void *b)
 #undef ASCIILOWER
 }
 
+size_t char_hash(const void *k)
+{
+    return (size_t)(*(char *)k);
+}
+
+int char_equal(const void *a, const void *b)
+{
+    return *((char *)a) == *((char *)b);
+}
+
