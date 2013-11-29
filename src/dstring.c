@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
 
 #ifdef NONSTRICT
 #   define UTF8_DECODE utf8_decode_s
@@ -320,6 +321,103 @@ char **dstrsplit(const char *str, const char *sep)
     result[nres + 1] = NULL;
 
     return result;
+}
+
+char **dstrshlex(const char *str, int *argc)
+{
+    enum lex_state { NONE, WORD, STRING } state = NONE;
+
+    int i;
+
+    struct lex_token {
+        enum lex_state type;
+        const char *start;
+        const char *end;
+    } tokens[256] = {{0, 0, 0}};
+
+    struct lex_token *tok = &tokens[0];
+
+    const char *ptr;
+    char **ret = NULL;
+
+    *argc = 0;
+
+    for (ptr = str; *ptr != '\0'; ++ptr) {
+        printf("%c\n", *ptr);
+        if (state == NONE) {
+            if (isspace(*ptr))
+                continue;
+
+            if (*ptr == '"') {
+                tok->type = state = STRING;
+                tok->start = ptr + 1;
+            } else {
+                tok->type = state = WORD;
+                tok->start = ptr;
+            }
+
+            continue;
+        } else {
+            if (*ptr == '\\') {
+                if (*(ptr + 1) != '\0')
+                    ++ptr;
+
+                continue;
+            }
+
+            if (state == STRING) {
+                if (*ptr != '"')
+                    continue;
+            } else if (state == WORD) {
+                if (!isspace(*ptr))
+                    continue;
+            }
+
+            tok->end = ptr;
+            state = NONE;
+            tok = &tokens[++*argc];
+        }
+    }
+
+    /* Finish the last token */
+    if (state != NONE) {
+        tok->end = ptr;
+        ++*argc;
+    }
+
+    ret = malloc(sizeof(char *) * (*argc + 1));
+
+    for (i = 0; i < *argc; ++i) {
+        size_t size = (tokens[i].end - tokens[i].start) + 1;
+
+        char *str = malloc(size);
+        memset(str, 0, size);
+
+        const char *ptr;  /* read pointer */
+        char *optr = str; /* write pointer */
+
+        for (ptr = tokens[i].start; ptr < tokens[i].end; ++ptr) {
+            if (*ptr == '\\') {
+                ++ptr;
+
+                switch (*ptr) {
+                    case ' ': *optr++ = ' ';  break;
+                    case '"': *optr++ = '"';  break;
+                    case 't': *optr++ = '\t'; break;
+                }
+            } else {
+                if ((tokens[i].type == WORD) && (*ptr == '"'))
+                    continue;
+
+                *optr++ = *ptr;
+            }
+        }
+
+        ret[i] = str;
+    }
+
+    ret[*argc] = NULL;
+    return ret;
 }
 
 void dstrlstfree(char **strlst)

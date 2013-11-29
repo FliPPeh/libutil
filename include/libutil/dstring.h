@@ -115,6 +115,18 @@ int dstrvalid(const char *str);
 char **dstrsplitc(const char *str, char32_t sep);
 char **dstrsplit(const char *str, const char *sep);
 
+/*
+ * Splits the given string in a similar way to how shells would split it, i.e.
+ * "foo \"bar baz\"" to {"foo", "bar baz", NULL}, suitable for passing into
+ * getopt(). Stores the number of strings split up into argc and returns argv.
+ *
+ * The lexer tolerates some invalid syntax, like turning "ab\"cd" into "abcd",
+ * in order to work without throwing errors and minimizing parsing. Supported
+ * escape sequences are "\ ", "\t" and "\\"", unknown escapes are ignored.
+ */
+char **dstrshlex(const char *str, int *argc);
+
+/* Frees a list as obtained via dstrsplit[c]() and dstrshlex() */
 void dstrlstfree(char **strlst);
 
 #endif /* define DSTRING_H */
