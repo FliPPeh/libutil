@@ -343,7 +343,6 @@ char **dstrshlex(const char *str, int *argc)
     *argc = 0;
 
     for (ptr = str; *ptr != '\0'; ++ptr) {
-        printf("%c\n", *ptr);
         if (state == NONE) {
             if (isspace(*ptr))
                 continue;
