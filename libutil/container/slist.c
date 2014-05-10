@@ -1,8 +1,20 @@
+#include <libutil/container/slist.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "slist.h"
+static INLINE_DEF void *_slist_copy_data(const void *data, void *userdata)
+{
+    (void)userdata;
+
+    return (void *)data;
+}
+
+static INLINE_DEF int _slist_data_equal(const void *a, const void *b)
+{
+    return !(a == b);
+}
 
 struct slist *slist_new()
 {
@@ -376,14 +388,3 @@ int slist_index(struct slist *list, const void *data)
     return -1;
 }
 
-void *_slist_copy_data(const void *data, void *userdata)
-{
-    (void)userdata;
-
-    return (void *)data;
-}
-
-int _slist_data_equal(const void *a, const void *b)
-{
-    return !(a == b);
-}

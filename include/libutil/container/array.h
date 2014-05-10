@@ -1,6 +1,8 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
+#include <libutil/libutil.h>
+
 #include <stdlib.h> /* size_t */
 
 struct array
@@ -29,7 +31,7 @@ void array_free(struct array *arr);
  * array length on assign!) - use only for fast access within known boundaries
  * or when only using functions that do not depend on the current length.
  */
-#define ARRAY_INDEX(a, i, t) ARRAY_DATA(a, t)[i]
+#define ARRAY_INDEX(a, i, t) (ARRAY_DATA(a, t)[i])
 
 size_t array_length(struct array *arr);
 size_t array_size(struct array *arr);

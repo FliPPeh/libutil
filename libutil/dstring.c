@@ -6,9 +6,9 @@
 #include <ctype.h>
 
 #ifdef NONSTRICT
-#   define UTF8_DECODE utf8_decode_s
+    #define UTF8_DECODE utf8_decode_s
 #else
-#   define UTF8_DECODE utf8_decode
+    #define UTF8_DECODE utf8_decode
 #endif
 
 
@@ -390,10 +390,11 @@ char **dstrshlex(const char *str, int *argc)
         size_t size = (tokens[i].end - tokens[i].start) + 1;
 
         char *str = malloc(size);
-        memset(str, 0, size);
 
         const char *ptr;  /* read pointer */
         char *optr = str; /* write pointer */
+
+        memset(str, 0, size);
 
         for (ptr = tokens[i].start; ptr < tokens[i].end; ++ptr) {
             if (*ptr == '\\') {

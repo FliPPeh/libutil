@@ -11,8 +11,8 @@ struct list
     struct list *prev;
 };
 
-#define list_next(list) ((list)->next)
-#define list_data(list, type) ((type)((list)->data))
+#define LIST_NEXT(list)              ((list)->next)
+#define LIST_DATA(list, type) ((type)((list)->data))
 
 typedef int (*list_compare_func)(const void *a, const void *b, void *userdata);
 typedef void (*list_data_func)(void *data, void *userdata);
@@ -80,19 +80,6 @@ struct list *list_find_custom(struct list *list,
 
 int list_position(struct list *list, struct list *link);
 int list_index(struct list *list, const void *data);
-
-void *_list_copy_data(const void *data, void *userdata);
-int _list_data_equal(const void *a, const void *b, void *ud);
-
-struct list *_list_link_before(struct list *list,
-                               struct list *link,
-                               struct list *newlink);
-
-struct list *_list_link_after(struct list *list,
-                              struct list *link,
-                              struct list *newlink);
-
-struct list *_list_unlink(struct list *list, struct list *link);
 
 #define LIST_FOREACH(list, ptr) \
     for ((ptr) = (list); (ptr) != NULL; (ptr) = (ptr)->next)

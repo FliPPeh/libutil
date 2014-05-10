@@ -1,8 +1,20 @@
+#include <libutil/libutil.h>
+#include <libutil/container/heap.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "heap.h"
+#define HEAP_GET_PARENT(i) (int)((i - 1) / 2)
+#define HEAP_GET_LEFT_CHILD(i) (2 * i + 1)
+#define HEAP_GET_RIGHT_CHILD(i) (2 * i + 2)
+
+static void _heap_increase(struct heap *heap);
+static void _heap_heapup(struct heap *heap, int ind);
+static void _heap_heapdown(struct heap *heap, int ind);
+
+static int _heap_needs_swap(struct heap *heap, int a, int b);
+static void _heap_swap(struct heap *heap, int a, int b);
 
 void heap_init(struct heap *heap)
 {
@@ -26,9 +38,17 @@ void heap_free(struct heap *heap)
     free(heap->heap);
 }
 
+size_t heap_size(struct heap *heap)
+{
+    return heap->usage;
+}
+
 void heap_insert(struct heap *heap, void *data, int priority)
 {
-    struct heap_element elem = { data, priority };
+    struct heap_element elem;
+
+    elem.data = data;
+    elem.priority = priority;
 
     if (heap->capacity > 0) {
         if (heap->usage >= heap->capacity)
@@ -44,15 +64,23 @@ void heap_insert(struct heap *heap, void *data, int priority)
     }
 }
 
-struct heap_element *heap_get_max(struct heap *heap)
-{
-    return (heap->usage > 0) ? &(heap->heap[0]) : NULL;
-}
-
-void *heap_pop_max(struct heap *heap)
+struct heap_element *heap_get_max(struct heap *heap, int *prio)
 {
     if (heap->usage > 0) {
-        void *data = heap_get_max(heap)->data;
+        if (prio != NULL) {
+            *prio = heap->heap[0].priority;
+        }
+
+        return heap->heap[0].data;
+    }
+
+    return NULL;
+}
+
+struct heap_element *heap_pop_max(struct heap *heap, int *prio)
+{
+    if (heap->usage > 0) {
+        void *data = heap_get_max(heap, prio);
 
         heap->heap[0] = heap->heap[--(heap->usage)];
         _heap_heapdown(heap, 0);
@@ -64,7 +92,7 @@ void *heap_pop_max(struct heap *heap)
 }
 
 
-void _heap_increase(struct heap *heap)
+static void _heap_increase(struct heap *heap)
 {
     heap->heap = realloc(heap->heap,
             sizeof(struct heap_element) * (heap->capacity * 2 + 1));
@@ -72,12 +100,12 @@ void _heap_increase(struct heap *heap)
     heap->capacity = heap->capacity * 2 + 1;
 }
 
-void _heap_heapup(struct heap *heap, int ind)
+static void _heap_heapup(struct heap *heap, int ind)
 {
     int child = ind;
 
     while (child) {
-        int parent = heap_get_parent(child);
+        int parent = HEAP_GET_PARENT(child);
 
         if (_heap_needs_swap(heap, parent, child)) {
             _heap_swap(heap, parent, child);
@@ -89,12 +117,12 @@ void _heap_heapup(struct heap *heap, int ind)
     }
 }
 
-void _heap_heapdown(struct heap *heap, int ind)
+static void _heap_heapdown(struct heap *heap, int ind)
 {
     int root = ind;
     size_t child;
 
-    while ((child = heap_get_left_child(root)) <= heap->usage) {
+    while ((child = HEAP_GET_LEFT_CHILD(root)) <= heap->usage) {
         int swap = root;
 
         if (_heap_needs_swap(heap, swap, child)) {
@@ -116,7 +144,7 @@ void _heap_heapdown(struct heap *heap, int ind)
     }
 }
 
-int _heap_needs_swap(struct heap *heap, int a, int b)
+static int _heap_needs_swap(struct heap *heap, int a, int b)
 {
     struct heap_element *ha = &heap->heap[a];
     struct heap_element *hb = &heap->heap[b];
@@ -127,7 +155,7 @@ int _heap_needs_swap(struct heap *heap, int a, int b)
         return ha->priority > hb->priority;
 }
 
-void _heap_swap(struct heap *heap, int a, int b)
+static void _heap_swap(struct heap *heap, int a, int b)
 {
     struct heap_element tmp;
 

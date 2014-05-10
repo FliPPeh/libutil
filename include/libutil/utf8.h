@@ -4,9 +4,9 @@
 #include <stdlib.h>
 
 #if __STDC_VERSION >= 201112L
-#   include <uchar.h> /* char32_t */
+    #include <uchar.h> /* char32_t */
 #else
-#   define char32_t unsigned long
+    #define char32_t unsigned long
 #endif
 
 /*
@@ -59,32 +59,5 @@ long utf8_strlen(const char *str);
  * assuming the replacement character.
  */
 long utf8_strlen_s(const char *str);
-
-/*
- * Helpers
- *
- * Most of these could be done with macros but let's avoid them where it's
- * not necessary.
- */
-unsigned _utf8_shiftpos(unsigned w, unsigned n);
-int _utf8_is_continuation(unsigned char c);
-
-/*
- * Encoding
- */
-unsigned _utf8_encoding_width(char32_t codepoint);
-
-char _utf8_header_byte(char32_t codepoint, unsigned w);
-char _utf8_continuation_byte(char32_t codepoint, unsigned w, unsigned n);
-
-/*
- * Decoding
- */
-unsigned _utf8_decoding_width(unsigned char header);
-
-/* Returned values are already shifted to their respective places */
-char32_t _utf8_header_value(unsigned char header, unsigned w);
-char32_t _utf8_continuation_value(unsigned char cont, unsigned w, unsigned n);
-
 
 #endif /* defined UTF8_H */

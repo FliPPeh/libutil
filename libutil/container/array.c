@@ -1,4 +1,4 @@
-#include "array.h"
+#include <libutil/container/array.h>
 
 #include <stdlib.h>
 #include <stdio.h>

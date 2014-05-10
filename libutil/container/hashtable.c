@@ -1,10 +1,25 @@
-#include "hashtable.h"
+#include <libutil/container/hashtable.h>
 
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
-struct hashtable_entry *_hashtable_entry_new(void *key, void *value)
+
+static void _hashtable_clear_internal(struct hashtable *table,
+                                      list_delete_func deleter);
+
+static void _hashtable_remove_internal(struct hashtable *table,
+                                       const void *key,
+                                       list_delete_func deleter);
+
+
+static void _hashtable_free_element(void *elem, void *userdata);
+static void _hashtable_free_element_shallow(void *elem, void *ud);
+
+static int _hashtable_find(const void *listdata, const void *key, void *ud);
+
+
+static struct hashtable_entry *_hashtable_entry_new(void *key, void *value)
 {
     struct hashtable_entry *e = malloc(sizeof(*e));
 
@@ -95,7 +110,7 @@ void hashtable_insert(struct hashtable *table, void *key, void *value)
         struct list *n = NULL;
         /* Bucket not empty => scan for eventually existing key to replace */
         for (n = table->buckets[idx]; n != NULL; n = n->next) {
-            struct hashtable_entry *e = list_data(n, struct hashtable_entry *);
+            struct hashtable_entry *e = LIST_DATA(n, struct hashtable_entry *);
 
             if (table->key_equal(key, e->key) == 0) {
                 /* replace! */
@@ -125,9 +140,9 @@ void hashtable_insert(struct hashtable *table, void *key, void *value)
 #endif
 }
 
-void _hashtable_remove_internal(struct hashtable *table,
-                                const void *key,
-                                list_delete_func deleter)
+static void _hashtable_remove_internal(struct hashtable *table,
+                                       const void *key,
+                                       list_delete_func deleter)
 {
     size_t idx;
     struct list *lst;
@@ -165,8 +180,8 @@ void hashtable_remove_shallow(struct hashtable *table, const void *key)
     _hashtable_remove_internal(table, key, _hashtable_free_element_shallow);
 }
 
-void _hashtable_clear_internal(struct hashtable *table,
-                               list_delete_func deleter)
+static void _hashtable_clear_internal(struct hashtable *table,
+                                      list_delete_func deleter)
 {
     size_t i;
 
@@ -186,7 +201,7 @@ void hashtable_clear_shallow(struct hashtable *table)
     _hashtable_clear_internal(table, _hashtable_free_element_shallow);
 }
 
-int _hashtable_find(const void *listdata, const void *key, void *ud)
+static int _hashtable_find(const void *listdata, const void *key, void *ud)
 {
     const struct hashtable_entry *e = listdata;
     struct hashtable *table = ud;
@@ -213,7 +228,7 @@ void *hashtable_lookup(const struct hashtable *table, const void *key)
         table->buckets[idx], key, _hashtable_find, (void *)table);
 
     if (n != NULL)
-        return list_data(n, struct hashtable_entry *)->value;
+        return LIST_DATA(n, struct hashtable_entry *)->value;
 
     return NULL;
 }
@@ -284,7 +299,7 @@ struct list *hashtable_keys(const struct hashtable *table)
         struct list *p;
 
         for (p = table->buckets[i]; p != NULL; p = p->next)
-            lst = list_append(lst, list_data(p, struct hashtable_entry *)->key);
+            lst = list_append(lst, LIST_DATA(p, struct hashtable_entry *)->key);
     }
 
     return lst;
@@ -302,7 +317,7 @@ struct list *hashtable_values(const struct hashtable *table)
 
         for (p = table->buckets[i]; p != NULL; p = p->next)
             lst = list_append(
-                lst, list_data(p, struct hashtable_entry *)->value);
+                lst, LIST_DATA(p, struct hashtable_entry *)->value);
     }
 
     return lst;
@@ -335,14 +350,14 @@ void hashtable_complement(struct hashtable *a, struct hashtable *b)
 
 }
 
-void _hashtable_free_element_shallow(void *elem, void *ud)
+static void _hashtable_free_element_shallow(void *elem, void *ud)
 {
     (void)ud;
 
     free(elem);
 }
 
-void _hashtable_free_element(void *elem, void *userdata)
+static void _hashtable_free_element(void *elem, void *userdata)
 {
     struct hashtable *table = userdata;
     struct hashtable_entry *e = elem;
@@ -390,8 +405,8 @@ bool hashtable_iterator_next(struct hashtable_iterator *iter,
             return false;
     }
 
-    *tkey = list_data(iter->lst, struct hashtable_entry *)->key;
-    *tval = list_data(iter->lst, struct hashtable_entry *)->value;
+    *tkey = LIST_DATA(iter->lst, struct hashtable_entry *)->key;
+    *tval = LIST_DATA(iter->lst, struct hashtable_entry *)->value;
 
     iter->lst = iter->lst->next;
     return true;
@@ -443,13 +458,38 @@ int ascii_equal(const void *a, const void *b)
 #undef ASCIILOWER
 }
 
-size_t char_hash(const void *k)
-{
-    return (size_t)(*(char *)k);
-}
+/* TODO: Actually *hash* them */
+#define X(T, fn)                      \
+    size_t fn ## _hash(const void *k) \
+    {                                 \
+        return (size_t)(*(T *)k);     \
+    }                                 \
+                                      \
+    int fn ## _equal(const void *a, const void *b) \
+    {                                              \
+        return !(*((T *)a) == *((T *)b));          \
+    }                                              \
+                                                   \
+    size_t unsigned_ ## fn ## _hash(const void *k) \
+    {                                              \
+        return (size_t)(*(unsigned T *)k);         \
+    }                                              \
+                                                   \
+    int unsigned_ ## fn ## _equal(const void *a, const void *b) \
+    {                                                           \
+        return !(*((unsigned T *)a) == *((unsigned T *)b));     \
+    }
+PTYPES
+#undef X
 
-int char_equal(const void *a, const void *b)
-{
-    return !(*((char *)a) == *((char *)b));
-}
+#if __STDC_VERSION__ >= 199901L
+    size_t bool_hash(const void *k)
+    {
+        return (size_t)(*(_Bool *)k);
+    }
 
+    int bool_equal(const void *a, const void *b)
+    {
+            return !(*((_Bool *)a) == *((_Bool *)b));
+    }
+#endif

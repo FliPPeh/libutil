@@ -3,6 +3,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+static unsigned _utf8_shiftpos(unsigned w, unsigned n);
+static int _utf8_is_continuation(unsigned char c);
+
+static unsigned _utf8_encoding_width(char32_t codepoint);
+
+static char _utf8_header_byte(char32_t codepoint, unsigned w);
+static char _utf8_continuation_byte(char32_t codepoint, unsigned w, unsigned n);
+
+static unsigned _utf8_decoding_width(unsigned char header);
+
+static char32_t _utf8_header_value(unsigned char header, unsigned w);
+static char32_t _utf8_continuation_value(unsigned char cont,
+                                         unsigned w,
+                                         unsigned n);
+
+
 int utf8_encode(char *buf, size_t bufsiz, char32_t codepoint)
 {
     unsigned w = _utf8_encoding_width(codepoint);
@@ -76,7 +92,7 @@ int utf8_decode_s(const char *buf, size_t bufsiz, char32_t *codepoint)
         if (codepoint)
             *codepoint = 0xFFFD;
 
-        for (; (n < bufsiz) && (buf[n] > 0x7f); ++n)
+        for (; (n < bufsiz) && (((unsigned char *)buf)[n] > 0x7f); ++n)
             ;;
 
         return n;
@@ -121,17 +137,17 @@ long utf8_strlen_s(const char *str)
     return len;
 }
 
-unsigned _utf8_shiftpos(unsigned w, unsigned n)
+static unsigned _utf8_shiftpos(unsigned w, unsigned n)
 {
     return 6 * (w - 1 - n);
 }
 
-int _utf8_is_continuation(unsigned char c)
+static int _utf8_is_continuation(unsigned char c)
 {
     return (c & 0xc0) == 0x80;
 }
 
-unsigned _utf8_encoding_width(char32_t codepoint)
+static unsigned _utf8_encoding_width(char32_t codepoint)
 {
     size_t steps[] = { 0x7f, 0x07ff, 0xffff, 0x1fffff, 0x3ffffff, 0x7fffffff };
     unsigned n = 0;
@@ -145,7 +161,7 @@ unsigned _utf8_encoding_width(char32_t codepoint)
     return n;
 }
 
-char _utf8_header_byte(char32_t codepoint, unsigned w)
+static char _utf8_header_byte(char32_t codepoint, unsigned w)
 {
     unsigned char pattern = ~0 << (8 - w);
     unsigned char valmask = ~0 >> (7 - w);
@@ -153,12 +169,12 @@ char _utf8_header_byte(char32_t codepoint, unsigned w)
     return pattern | (char)(codepoint >> _utf8_shiftpos(w, 0) & valmask);
 }
 
-char _utf8_continuation_byte(char32_t codepoint, unsigned w, unsigned n)
+static char _utf8_continuation_byte(char32_t codepoint, unsigned w, unsigned n)
 {
     return 0x80 | (char)(codepoint >> _utf8_shiftpos(w, n) & 0x3f);
 }
 
-unsigned _utf8_decoding_width(unsigned char header)
+static unsigned _utf8_decoding_width(unsigned char header)
 {
     unsigned n = 0;
 
@@ -176,12 +192,14 @@ unsigned _utf8_decoding_width(unsigned char header)
     return n;
 }
 
-char32_t _utf8_header_value(unsigned char header, unsigned w)
+static char32_t _utf8_header_value(unsigned char header, unsigned w)
 {
     return (header & ((unsigned char)~0 >> (7 - w))) << _utf8_shiftpos(w, 0);
 }
 
-char32_t _utf8_continuation_value(unsigned char cont, unsigned w, unsigned n)
+static char32_t _utf8_continuation_value(unsigned char cont,
+                                         unsigned w,
+                                         unsigned n)
 {
     return (cont & 0x3f) << _utf8_shiftpos(w, n);
 }

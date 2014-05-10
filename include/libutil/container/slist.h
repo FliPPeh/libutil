@@ -1,6 +1,10 @@
 #ifndef SLIST_H
 #define SLIST_H
 
+#include <libutil/libutil.h>
+
+#include <stdlib.h>
+
 struct slist
 {
     void *data;
@@ -8,8 +12,8 @@ struct slist
     struct slist *next;
 };
 
-#define slist_next(list) list->next
-#define slist_data(list) list->data
+#define SLIST_NEXT(list)              ((list)->next)
+#define SLIST_DATA(list, type) ((type)((list)->data))
 
 typedef int (*slist_compare_func)(const void *a, const void *b);
 typedef void (*slist_data_func)(void *data, void *userdata);
@@ -63,8 +67,5 @@ struct slist *slist_find_custom(
 
 int slist_position(struct slist *list, struct slist *link);
 int slist_index(struct slist *list, const void *data);
-
-void *_slist_copy_data(const void *data, void *userdata);
-int _slist_data_equal(const void *a, const void *b);
 
 #endif /* defined SLIST_H */

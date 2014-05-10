@@ -1,8 +1,21 @@
-#include "list.h"
+#include <libutil/container/list.h>
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+static void *_list_copy_data(const void *data, void *userdata);
+static int _list_data_equal(const void *a, const void *b, void *ud);
+
+static struct list *_list_link_before(struct list *list,
+                                      struct list *link,
+                                      struct list *newlink);
+
+static struct list *_list_link_after(struct list *list,
+                                     struct list *link,
+                                     struct list *newlink);
+
+static struct list *_list_unlink(struct list *list, struct list *link);
 
 void list_free_wrapper(void *data, void *ud)
 {
@@ -332,23 +345,23 @@ int list_index(struct list *list, const void *data)
     return -1;
 }
 
-void *_list_copy_data(const void *data, void *userdata)
+static void *_list_copy_data(const void *data, void *userdata)
 {
     (void)userdata;
 
     return (void *)data;
 }
 
-int _list_data_equal(const void *a, const void *b, void *ud)
+static int _list_data_equal(const void *a, const void *b, void *ud)
 {
     (void)ud;
 
     return !(a == b);
 }
 
-struct list *_list_link_before(struct list *list,
-                               struct list *link,
-                               struct list *newlink)
+static struct list *_list_link_before(struct list *list,
+                                      struct list *link,
+                                      struct list *newlink)
 {
     if (!list)
         return newlink;
@@ -364,7 +377,7 @@ struct list *_list_link_before(struct list *list,
     return (link == list) ? newlink : list;
 }
 
-struct list *_list_link_after(struct list *list,
+static struct list *_list_link_after(struct list *list,
                               struct list *link,
                               struct list *newlink)
 {
@@ -382,7 +395,7 @@ struct list *_list_link_after(struct list *list,
     return list;
 }
 
-struct list *_list_unlink(struct list *list, struct list *link)
+static struct list *_list_unlink(struct list *list, struct list *link)
 {
     struct list *next = link->next;
 

@@ -1,10 +1,10 @@
 #ifndef HASHTABLE_H
 #define HASHTABLE_H
 
-#include "list.h"
+#include <libutil/libutil.h>
+#include <libutil/container/list.h>
 
 #include <stdlib.h>
-#include <stdbool.h>
 
 #define HASHTABLE_INIT_SIZE 4
 #define AUTOREHASH             /* undefine to never automatically rehash   */
@@ -41,8 +41,6 @@ struct hashtable_iterator
     size_t bucket;
     struct list *lst;
 };
-
-struct hashtable_entry *_hashtable_entry_new(void *key, void *value);
 
 struct hashtable *hashtable_new(hashtable_hash_func hsh,
                                 hashtable_equality_func eq);
@@ -82,16 +80,6 @@ void hashtable_remove_shallow(struct hashtable *table, const void *key);
 void hashtable_clear(struct hashtable *table);
 void hashtable_clear_shallow(struct hashtable *table);
 
-void _hashtable_clear_internal(struct hashtable *table,
-                               list_delete_func deleter);
-
-void _hashtable_remove_internal(struct hashtable *table,
-                                const void *key,
-                                list_delete_func deleter);
-
-
-int _hashtable_find(const void *listdata, const void *key, void *ud);
-
 void *hashtable_lookup(const struct hashtable *table, const void *key);
 bool hashtable_contains(const struct hashtable *table, const void *key);
 size_t hashtable_size(const struct hashtable *table);
@@ -123,9 +111,6 @@ struct list *hashtable_values(const struct hashtable *table);
 void hashtable_union(struct hashtable *a, struct hashtable *b);
 void hashtable_complement(struct hashtable *a, struct hashtable *b);
 
-void _hashtable_free_element(void *elem, void *userdata);
-void _hashtable_free_element_shallow(void *elem, void *ud);
-
 void hashtable_iterator_init(struct hashtable_iterator *iter,
                              const struct hashtable *t);
 
@@ -133,19 +118,32 @@ bool hashtable_iterator_next(struct hashtable_iterator *iter,
                              void **tkey,
                              void **tval);
 
-#define HASHTABLE_NEW(T) hashtable_new(HASHFUNC_FOR(T), EQUALFUNC_FOR(T))
-
-#define HASHTABLE_NEW_WRITH_FREE(T, fkey, fval) \
-    hashtable_new_with_free(HASHFUNC_FOR(T),    \
-                            EQUALFUNC_FOR(T), (fkey), (fval))
-
 #if __STDC_VERSION__ >= 201112L
-/* TODO: More functions */
-#   define HASHFUNC_FOR(T) _Generic((T)NULL, \
-        const char *: str_hash)
+    #define HASHTABLE_NEW(T) hashtable_new(HASHFUNC_FOR(T), EQUALFUNC_FOR(T))
 
-#   define EQUALFUNC_FOR(T) _Generic((T)NULL, \
-        const char *: str_equal)
+    #define HASHTABLE_NEW_WRITH_FREE(T, fkey, fval) \
+        hashtable_new_with_free(HASHFUNC_FOR(T),    \
+                                EQUALFUNC_FOR(T), (fkey), (fval))
+
+    /* :) */
+    #define __CONST_NONCONST(T, fun)  T: fun, const T: fun
+    #define __SIGNED_UNSIGNED(T, fun) T: fun, unsigned T: unsigned_ ## fun
+    #define __SIGNED_UNSIGNED_NEITHER(T, fun) \
+                 T:              fun, \
+          signed T:              fun, \
+        unsigned T: unsigned_ ## fun
+
+    #define FUNC_FOR(T, type) _Generic((T)0,                  \
+                         _Bool:               bool ## type,   \
+        __CONST_NONCONST( char *,              str ## type),  \
+        __SIGNED_UNSIGNED_NEITHER(char,       char ## type),  \
+        __SIGNED_UNSIGNED(int,                 int ## type),  \
+        __SIGNED_UNSIGNED(short,             short ## type),  \
+        __SIGNED_UNSIGNED(long,               long ## type),  \
+        __SIGNED_UNSIGNED(long long,     long_long ## type))
+
+    #define HASHFUNC_FOR(T) FUNC_FOR(T, _hash)
+    #define EQUALFUNC_FOR(T) FUNC_FOR(T, _equal)
 #endif
 
 size_t ascii_hash(const void *k);
@@ -154,7 +152,26 @@ int ascii_equal(const void *a, const void *b);
 size_t str_hash(const void *k);
 int str_equal(const void *a, const void *b);
 
-size_t char_hash(const void *k);
-int char_equal(const void *a, const void *b);
+/* Autogenerate hashing and equality checking for primitive types */
+#define PTYPES              \
+    X(char,      char)      \
+    X(int,       int)       \
+    X(short,     short)     \
+    X(long,      long)      \
+    X(long long, long_long)
+
+#define X(T, fn)                                       \
+    size_t fn ## _hash(const void *k);                 \
+    int    fn ## _equal(const void *a, const void *b); \
+                                                       \
+    size_t unsigned_ ## fn ## _hash(const void *k);                 \
+    int    unsigned_ ## fn ## _equal(const void *a, const void *b);
+PTYPES
+#undef X
+
+#if __STDC_VERSION__ >= 199901L
+    size_t bool_hash(const void *k);
+    int bool_equal(const void *a, const void *b);
+#endif
 
 #endif /* defined HASHTABLE_H */

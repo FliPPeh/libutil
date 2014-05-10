@@ -166,7 +166,11 @@ void json_free_contents(struct json_value *v)
 
 struct json_value *json_parse(const char *input)
 {
-    struct json_lexer_state state = { 0, input };
+    struct json_lexer_state state;
+
+    state.pos = 0;
+    state.input = input;
+
     return json_parse_value(&state);
 }
 
@@ -378,22 +382,21 @@ char *json_parse_string(struct json_lexer_state *lex,
         case 't':  str[j++] = '\t'; break;
         case 'u': {
             /* Because you can't tell scanf to scan EXACTLY 4 characters. */
-            char cp0, cp1, cp2, cp3;
+            unsigned cp0, cp1, cp2, cp3;
             unsigned short codepoint;
 
             i++; /* Skip the 'u' */
 
             /* Make sure there's at least 4 characters left */
-            if ((long)(len - (i + 4)) < 0) {
+            if ((long)(tok->i + len - (i + 4)) < 0) {
                 /*
                 fprintf(stderr, "incomplete unicode escape `%.*s'\n",
-                    (int)(len - (i + 4)), lex->input + i);
+                    (int)(tok->i + len - (i + 4)), lex->input + i);
                 */
-
                 goto exit_err;
             }
 
-            if (sscanf(lex->input + i, "%1hhx%1hhx%1hhx%1hhx",
+            if (sscanf(lex->input + i, "%1x%1x%1x%1x",
                        &cp0, &cp1, &cp2, &cp3) != 4) {
                 /*
                 fprintf(stderr, "invalid unicode escape `%.4s'\n",
@@ -403,7 +406,10 @@ char *json_parse_string(struct json_lexer_state *lex,
                 goto exit_err;
             }
 
-            codepoint = cp0 << 12 | cp1 << 8 | cp2 << 4 | cp3;
+            codepoint = (char)cp0 << 12
+                      | (char)cp1 << 8
+                      | (char)cp2 << 4
+                      | (char)cp3;
 
             j += utf8_encode(str + j, len - j, codepoint);
 
@@ -469,7 +475,7 @@ size_t json_dump(char *out, size_t nout, struct json_value *val)
         pos += snprintf(out, nout, "[");
 
         for (ptr = val->value.jarray; ptr != NULL; ptr = ptr->next) {
-            pos += json_dump(BUFORNULL, list_data(ptr, struct json_value *));
+            pos += json_dump(BUFORNULL, LIST_DATA(ptr, struct json_value *));
 
             if (ptr->next != NULL)
                 pos += snprintf(BUFORNULL, ", ");
@@ -501,6 +507,8 @@ size_t json_dump(char *out, size_t nout, struct json_value *val)
         return pos;
     }
     }
+
+    return pos;
 }
 
 size_t json_dump_string(char *out, size_t nout, const char *str)
